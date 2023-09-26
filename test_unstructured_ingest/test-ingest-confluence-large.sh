@@ -12,6 +12,10 @@ OUTPUT_FOLDER_NAME=confluence-large
 OUTPUT_DIR=$SCRIPT_DIR/structured-output/$OUTPUT_FOLDER_NAME
 DOWNLOAD_DIR=$SCRIPT_DIR/download/$OUTPUT_FOLDER_NAME
 
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR"/cleanup.sh
+trap 'cleanup_dir "$OUTPUT_DIR"' EXIT
+
 if [ -z "$CONFLUENCE_USER_EMAIL" ] || [ -z "$CONFLUENCE_API_TOKEN" ]; then
    echo "Skipping Confluence ingest test because the CONFLUENCE_USER_EMAIL or CONFLUENCE_API_TOKEN env var is not set."
    exit 0
@@ -24,17 +28,17 @@ fi
 PYTHONPATH=. ./unstructured/ingest/main.py \
     confluence \
     --download-dir "$DOWNLOAD_DIR" \
-    --metadata-exclude filename,file_directory,metadata.data_source.date_processed,metadata.last_modified \
+    --metadata-exclude filename,file_directory,metadata.data_source.date_processed,metadata.last_modified,metadata.detection_class_prob,metadata.parent_id,metadata.category_depth \
     --num-processes 2 \
     --preserve-downloads \
     --reprocess \
-    --structured-output-dir "$OUTPUT_DIR" \
+    --output-dir "$OUTPUT_DIR" \
     --verbose \
     --url https://unstructured-ingest-test.atlassian.net \
     --user-email "$CONFLUENCE_USER_EMAIL" \
     --api-token "$CONFLUENCE_API_TOKEN" \
     --max-num-of-spaces 10 \
-    --list-of-spaces testteamsp1 \
+    --spaces testteamsp1 \
     --max-num-of-docs-from-each-space 250 \
 
 OUTPUT_SUBFOLDER_NAME=testteamsp1
@@ -43,7 +47,7 @@ OUTPUT_SUBFOLDER_NAME=testteamsp1
 # Example:
 # Output dir: unstructured/test_unstructured_ingest/structured-output/confluence-large
 # Space dir: unstructured/test_unstructured_ingest/structured-output/confluence-large/testteamsp1
-sh "$SCRIPT_DIR"/check-num-dirs-output.sh 2 "$OUTPUT_FOLDER_NAME"
+"$SCRIPT_DIR"/check-num-dirs-output.sh 2 "$OUTPUT_FOLDER_NAME"
 
 # We are expecting 250 files due to the --confluence-num-of-docs-from-each-space 250 that we provided.
-sh "$SCRIPT_DIR"/check-num-files-output.sh 250 "$OUTPUT_FOLDER_NAME"/"$OUTPUT_SUBFOLDER_NAME"/
+"$SCRIPT_DIR"/check-num-files-output.sh 250 "$OUTPUT_FOLDER_NAME"/"$OUTPUT_SUBFOLDER_NAME"/

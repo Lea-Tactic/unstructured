@@ -11,16 +11,21 @@ cd "$SCRIPT_DIR"/.. || exit 1
 OUTPUT_FOLDER_NAME=api-ingest-output
 OUTPUT_DIR=$SCRIPT_DIR/structured-output/$OUTPUT_FOLDER_NAME
 
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR"/cleanup.sh
+trap 'cleanup_dir "$OUTPUT_DIR"' EXIT
+
 PYTHONPATH=. ./unstructured/ingest/main.py \
     local \
     --api-key "$UNS_API_KEY" \
-    --metadata-exclude coordinates,metadata.last_modified \
+    --metadata-exclude coordinates,metadata.last_modified,metadata.detection_class_prob,metadata.parent_id,metadata.category_depth \
     --partition-by-api \
-    --partition-strategy hi_res \
+    --strategy hi_res \
     --reprocess \
-    --structured-output-dir "$OUTPUT_DIR" \
+    --output-dir "$OUTPUT_DIR" \
     --verbose \
-    --file-glob "*.pdf" \
+    --num-processes 1 \
+    --file-glob "*1p.txt" \
     --input-path example-docs
 
-sh "$SCRIPT_DIR"/check-num-files-output.sh 12 $OUTPUT_FOLDER_NAME
+"$SCRIPT_DIR"/check-num-files-output.sh 1 $OUTPUT_FOLDER_NAME

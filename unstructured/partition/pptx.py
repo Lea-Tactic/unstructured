@@ -3,6 +3,7 @@ from typing import IO, BinaryIO, List, Optional, Union, cast
 
 import pptx
 
+from unstructured.chunking.title import add_chunking_strategy
 from unstructured.documents.elements import (
     Element,
     ElementMetadata,
@@ -34,6 +35,7 @@ OPENXML_SCHEMA_NAME = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
 
 @process_metadata()
 @add_metadata_with_filetype(FileType.PPTX)
+@add_chunking_strategy()
 def partition_pptx(
     filename: Optional[str] = None,
     file: Optional[Union[IO[bytes], SpooledTemporaryFile]] = None,
@@ -42,6 +44,7 @@ def partition_pptx(
     include_metadata: bool = True,
     metadata_last_modified: Optional[str] = None,
     include_slide_notes: bool = False,
+    chunking_strategy: Optional[str] = None,
     **kwargs,
 ) -> List[Element]:
     """Partitions Microsoft PowerPoint Documents in .pptx format into its document elements.
@@ -101,8 +104,8 @@ def partition_pptx(
             if shape.has_table:
                 table: pptx.table.Table = shape.table
                 html_table = convert_ms_office_table_to_text(table, as_html=True)
-                text_table = convert_ms_office_table_to_text(table, as_html=False)
-                if (text_table := text_table.strip()) != "":
+                text_table = convert_ms_office_table_to_text(table, as_html=False).strip()
+                if text_table:
                     metadata = ElementMetadata(
                         filename=metadata_filename or filename,
                         text_as_html=html_table,
